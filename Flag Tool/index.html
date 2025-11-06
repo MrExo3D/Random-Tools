@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Ripple Generator - Depth Map Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .control-item {
+            margin-bottom: 20px;
+        }
+
+        .control-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .slider::-moz-range-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95em;
+        }
+
+        .input-number {
+            width: 100px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .input-number:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .preview-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .preview-header h3 {
+            color: #333;
+        }
+
+        .canvas-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            overflow: auto;
+            max-height: 70vh;
+        }
+
+        #previewCanvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #preview3DCanvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            cursor: grab;
+        }
+
+        #preview3DCanvas:active {
+            cursor: grabbing;
+        }
+
+        .info-text {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚩 Flag Ripple Generator</h1>
+            <p>Create flag-like depth maps with flowing waves and ripples</p>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Output Size</h3>
+                    <div class="control-item">
+                        <label for="width">Width (px)</label>
+                        <input type="number" id="width" class="input-number" value="1920" min="100" max="10000" step="100">
+                    </div>
+                    <div class="control-item">
+                        <label for="height">Height (px)</label>
+                        <input type="number" id="height" class="input-number" value="1080" min="100" max="10000" step="100">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Horizontal Waves (Wind Direction)</h3>
+                    <div class="control-item">
+                        <label for="waveQty">Wave Quantity: <span class="value-display" id="waveQtyValue">8</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="waveQty" class="slider" min="0" max="20" value="8" step="1">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="waveSize">Wave Frequency: <span class="value-display" id="waveSizeValue">0.50</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="waveSize" class="slider" min="0.1" max="2.0" value="0.5" step="0.01">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="waveDirection">Wave Direction: <span class="value-display" id="waveDirectionValue">0.0</span>°</label>
+                        <div class="slider-container">
+                            <input type="range" id="waveDirection" class="slider" min="0" max="360" value="0" step="1">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="waveUniformity">Wave Uniformity: <span class="value-display" id="waveUniformityValue">0.50</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="waveUniformity" class="slider" min="0" max="1" value="0.5" step="0.01">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="waveSpacing">Wave Spacing: <span class="value-display" id="waveSpacingValue">1.00</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="waveSpacing" class="slider" min="0.1" max="5.0" value="1.0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Vertical Ripples (Fabric Folds)</h3>
+                    <div class="control-item">
+                        <label for="rippleQty">Ripple Quantity: <span class="value-display" id="rippleQtyValue">15</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="rippleQty" class="slider" min="0" max="50" value="15" step="1">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="rippleSize">Ripple Frequency: <span class="value-display" id="rippleSizeValue">0.15</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="rippleSize" class="slider" min="0.05" max="0.5" value="0.15" step="0.01">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="rippleSpacing">Ripple Spacing: <span class="value-display" id="rippleSpacingValue">1.00</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="rippleSpacing" class="slider" min="0.1" max="5.0" value="1.0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Contrast</h3>
+                    <div class="control-item">
+                        <label for="contrast">Contrast: <span class="value-display" id="contrastValue">1.00</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="contrast" class="slider" min="0.1" max="3.0" value="1.0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Seed</h3>
+                    <div class="control-item">
+                        <label for="seed">Seed: <span class="value-display" id="seedValue">0</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="seed" class="slider" min="0" max="9999" value="0" step="1">
+                        </div>
+                    </div>
+                    <div class="control-item" style="margin-top: 10px;">
+                        <button class="btn btn-secondary" id="randomSeedBtn" style="width: 100%; padding: 8px; font-size: 0.9em;">Random Seed</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Bit Depth</h3>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="bit16" name="bitDepth" value="16" checked>
+                            <label for="bit16">16-bit</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bit32" name="bitDepth" value="32">
+                            <label for="bit32">32-bit</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="generateBtn">Generate Full Res</button>
+                    <button class="btn btn-secondary" id="downloadBtn">Download</button>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="preview-header">
+                    <h3>Preview</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="checkbox" id="view3D" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span>3D View</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <div class="loading" id="loading">Generating depth map...</div>
+                    <canvas id="previewCanvas" style="display: none;"></canvas>
+                    <canvas id="preview3DCanvas" style="display: none;"></canvas>
+                    <div class="info-text" id="infoText">Adjust settings and click Generate to create a flag-like depth map</div>
+                    <div class="info-text" id="info3D" style="display: none; margin-top: 10px; color: #667eea;">
+                        Click and drag to rotate | Scroll to zoom | Right-click drag to pan
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const waveQtySlider = document.getElementById('waveQty');
+        const waveSizeSlider = document.getElementById('waveSize');
+        const waveDirectionSlider = document.getElementById('waveDirection');
+        const waveUniformitySlider = document.getElementById('waveUniformity');
+        const waveSpacingSlider = document.getElementById('waveSpacing');
+        const rippleQtySlider = document.getElementById('rippleQty');
+        const rippleSizeSlider = document.getElementById('rippleSize');
+        const rippleSpacingSlider = document.getElementById('rippleSpacing');
+        const contrastSlider = document.getElementById('contrast');
+        const seedSlider = document.getElementById('seed');
+        const seedValue = document.getElementById('seedValue');
+        const randomSeedBtn = document.getElementById('randomSeedBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvas3D = document.getElementById('preview3DCanvas');
+        const view3DCheckbox = document.getElementById('view3D');
+        const info3D = document.getElementById('info3D');
+        const loading = document.getElementById('loading');
+        const infoText = document.getElementById('infoText');
+        
+        // 3D rendering variables
+        let gl3D = null;
+        let shaderProgram = null;
+        let vertexBuffer = null;
+        let indexBuffer = null;
+        let depthTexture = null;
+        let currentDepthMap3D = null;
+        let currentDepthMap3DWidth = 0;
+        let currentDepthMap3DHeight = 0;
+        let cameraRotation = { x: -0.5, y: 0.5 };
+        let cameraDistance = 3.0;
+        let cameraPan = { x: 0, y: 0 };
+        let isDragging = false;
+        let isRightDragging = false;
+        let lastMousePos = { x: 0, y: 0 };
+
+        // Value displays
+        const waveQtyValue = document.getElementById('waveQtyValue');
+        const waveSizeValue = document.getElementById('waveSizeValue');
+        const waveDirectionValue = document.getElementById('waveDirectionValue');
+        const waveUniformityValue = document.getElementById('waveUniformityValue');
+        const waveSpacingValue = document.getElementById('waveSpacingValue');
+        const rippleQtyValue = document.getElementById('rippleQtyValue');
+        const rippleSizeValue = document.getElementById('rippleSizeValue');
+        const rippleSpacingValue = document.getElementById('rippleSpacingValue');
+        const contrastValue = document.getElementById('contrastValue');
+
+        // Update value displays and auto-generate
+        waveQtySlider.addEventListener('input', (e) => {
+            waveQtyValue.textContent = e.target.value;
+            debounceAutoUpdate();
+        });
+
+        waveSizeSlider.addEventListener('input', (e) => {
+            waveSizeValue.textContent = parseFloat(e.target.value).toFixed(2);
+            debounceAutoUpdate();
+        });
+
+        waveDirectionSlider.addEventListener('input', (e) => {
+            waveDirectionValue.textContent = parseFloat(e.target.value).toFixed(0) + '°';
+            debounceAutoUpdate();
+        });
+
+        waveUniformitySlider.addEventListener('input', (e) => {
+            waveUniformityValue.textContent = parseFloat(e.target.value).toFixed(2);
+            debounceAutoUpdate();
+        });
+
+        waveSpacingSlider.addEventListener('input', (e) => {
+            waveSpacingValue.textContent = parseFloat(e.target.value).toFixed(2);
+            debounceAutoUpdate();
+        });
+
+        rippleQtySlider.addEventListener('input', (e) => {
+            rippleQtyValue.textContent = e.target.value;
+            debounceAutoUpdate();
+        });
+
+        rippleSizeSlider.addEventListener('input', (e) => {
+            rippleSizeValue.textContent = parseFloat(e.target.value).toFixed(2);
+            debounceAutoUpdate();
+        });
+
+        rippleSpacingSlider.addEventListener('input', (e) => {
+            rippleSpacingValue.textContent = parseFloat(e.target.value).toFixed(2);
+            debounceAutoUpdate();
+        });
+
+        contrastSlider.addEventListener('input', (e) => {
+            contrastValue.textContent = parseFloat(e.target.value).toFixed(2);
+            // Only apply contrast, don't regenerate pattern
+            applyContrastOnly();
+        });
+
+        // Seed control
+        seedSlider.addEventListener('input', (e) => {
+            seedValue.textContent = e.target.value;
+            debounceAutoUpdate();
+        });
+
+        randomSeedBtn.addEventListener('click', () => {
+            const randomSeed = Math.floor(Math.random() * 10000);
+            seedSlider.value = randomSeed;
+            seedValue.textContent = randomSeed;
+            debounceAutoUpdate();
+        });
+
+        // Auto-update on size changes
+        widthInput.addEventListener('input', debounceAutoUpdate);
+        widthInput.addEventListener('change', debounceAutoUpdate);
+        heightInput.addEventListener('input', debounceAutoUpdate);
+        heightInput.addEventListener('change', debounceAutoUpdate);
+
+        // Auto-update on bit depth change
+        document.querySelectorAll('input[name="bitDepth"]').forEach(radio => {
+            radio.addEventListener('change', debounceAutoUpdate);
+        });
+
+        // Update initial values
+        waveQtyValue.textContent = waveQtySlider.value;
+        waveSizeValue.textContent = parseFloat(waveSizeSlider.value).toFixed(2);
+        waveDirectionValue.textContent = parseFloat(waveDirectionSlider.value).toFixed(0) + '°';
+        waveUniformityValue.textContent = parseFloat(waveUniformitySlider.value).toFixed(2);
+        waveSpacingValue.textContent = parseFloat(waveSpacingSlider.value).toFixed(2);
+        rippleQtyValue.textContent = rippleQtySlider.value;
+        rippleSizeValue.textContent = parseFloat(rippleSizeSlider.value).toFixed(2);
+        rippleSpacingValue.textContent = parseFloat(rippleSpacingSlider.value).toFixed(2);
+        seedValue.textContent = seedSlider.value;
+
+        // Store current depth map data
+        let currentDepthMap = null;
+        let baseDepthMap = null; // Depth map before contrast is applied
+        let currentWidth = 0;
+        let currentHeight = 0;
+        let isGenerating = false;
+        let generateTimeout = null;
+        
+        // Store current parameters to detect changes
+        let lastParams = {
+            width: 0,
+            height: 0,
+            waveQty: -1,
+            waveSize: -1,
+            rippleQty: -1,
+            rippleSize: -1
+        };
+
+        // Seeded random number generator (Mulberry32)
+        function seededRandom(seed) {
+            return function() {
+                let t = seed += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        // Get seed value from slider
+        function getSeed() {
+            return parseInt(seedSlider.value) || 0;
+        }
+
+        // Debounce function for auto-update
+        function debounceAutoUpdate() {
+            if (generateTimeout) {
+                clearTimeout(generateTimeout);
+            }
+            generateTimeout = setTimeout(() => {
+                generateDepthMap(true); // true = preview mode (half resolution)
+            }, 300); // 300ms debounce
+        }
+
+        // Apply contrast only without regenerating pattern
+        function applyContrastOnly() {
+            if (!baseDepthMap) {
+                // No base map yet, need to generate first
+                debounceAutoUpdate();
+                return;
+            }
+
+            const contrast = parseFloat(contrastSlider.value);
+            const width = currentDepthMap3DWidth;
+            const height = currentDepthMap3DHeight;
+            
+            if (!width || !height || baseDepthMap.length !== width * height) {
+                // Dimensions don't match, need to regenerate
+                debounceAutoUpdate();
+                return;
+            }
+
+            // Create new depth map from base with new contrast
+            const depthMap = new Float32Array(baseDepthMap.length);
+            
+            // Apply contrast to base map
+            for (let i = 0; i < depthMap.length; i++) {
+                depthMap[i] = (baseDepthMap[i] - 0.5) * contrast + 0.5;
+                depthMap[i] = Math.max(0, Math.min(1, depthMap[i]));
+            }
+
+            // Update stored maps
+            currentDepthMap3D = depthMap;
+            
+            // Render based on view mode
+            if (view3DCheckbox.checked) {
+                render3DPreview(depthMap, width, height);
+            } else {
+                const fullWidth = parseInt(widthInput.value);
+                const fullHeight = parseInt(heightInput.value);
+                render2DPreview(depthMap, width, height, fullWidth, fullHeight, true);
+            }
+        }
+
+        // Generate depth map
+        function generateDepthMap(previewMode = false) {
+            if (isGenerating) return;
+            isGenerating = true;
+            // Use half resolution for preview mode for faster updates
+            const fullWidth = parseInt(widthInput.value);
+            const fullHeight = parseInt(heightInput.value);
+            const width = previewMode ? Math.floor(fullWidth / 2) : fullWidth;
+            const height = previewMode ? Math.floor(fullHeight / 2) : fullHeight;
+            
+            const waveQty = parseInt(waveQtySlider.value);
+            const waveSize = parseFloat(waveSizeSlider.value);
+            const waveDirection = parseFloat(waveDirectionSlider.value) * Math.PI / 180; // Convert to radians
+            const waveUniformity = parseFloat(waveUniformitySlider.value);
+            const waveSpacing = parseFloat(waveSpacingSlider.value);
+            const rippleQty = parseInt(rippleQtySlider.value);
+            const rippleSize = parseFloat(rippleSizeSlider.value);
+            const rippleSpacing = parseFloat(rippleSpacingSlider.value);
+            const contrast = parseFloat(contrastSlider.value);
+
+            loading.classList.add('active');
+            canvas.style.display = 'none';
+            infoText.style.display = 'none';
+
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    // Create coordinate arrays
+                    const depthMap = new Float32Array(width * height);
+                    
+                    // Get seed from slider
+                    const seed = getSeed();
+                    const random = seededRandom(seed);
+
+                    // Generate waves with controlled direction and uniformity
+                    // Uniformity: 0 = random/organic, 1 = perfectly parallel waves
+                    for (let i = 0; i < waveQty; i++) {
+                        // Base frequency - more uniform = less variation
+                        const baseFreq = waveSize * (2 + random() * 2);
+                        const freqVariation = (1.0 - waveUniformity) * 2.0;
+                        const horizontalFreq = baseFreq + (random() - 0.5) * freqVariation;
+                        const verticalFreq = baseFreq + (random() - 0.5) * freqVariation;
+                        
+                        // Phase - more uniform = less variation
+                        const phaseVariation = (1.0 - waveUniformity) * Math.PI * 2;
+                        const phaseX = (random() - 0.5) * phaseVariation;
+                        const phaseY = (random() - 0.5) * phaseVariation;
+                        
+                        // Amplitude - more uniform = less variation
+                        const amplitudeVariation = (1.0 - waveUniformity) * 0.6;
+                        const amplitude = 0.4 + (random() - 0.5) * amplitudeVariation;
+                        
+                        // Direction - blend between user direction and random
+                        const directionVariation = (1.0 - waveUniformity) * 0.5;
+                        const currentDirection = waveDirection + (random() - 0.5) * directionVariation;
+                        const cosDir = Math.cos(currentDirection);
+                        const sinDir = Math.sin(currentDirection);
+
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const nx = x / width;
+                                const ny = y / height;
+                                
+                                // Project coordinates along wave direction
+                                // This creates parallel waves in the specified direction
+                                const projX = nx * cosDir + ny * sinDir;
+                                const projY = -nx * sinDir + ny * cosDir;
+                                
+                                // Create wave along the projection with spacing control
+                                const wave = Math.sin(2 * Math.PI * horizontalFreq * projX * waveSpacing + phaseX);
+                                
+                                // Add perpendicular component for more complex patterns when uniformity is low
+                                if (waveUniformity < 0.7) {
+                                    const perpWave = Math.sin(2 * Math.PI * verticalFreq * projY + phaseY) * (1.0 - waveUniformity) * 0.3;
+                                    depthMap[y * width + x] += amplitude * (wave + perpWave);
+                                } else {
+                                    depthMap[y * width + x] += amplitude * wave;
+                                }
+                            }
+                        }
+                    }
+
+                    // Normalize waves
+                    if (waveQty > 0) {
+                        for (let i = 0; i < depthMap.length; i++) {
+                            depthMap[i] /= waveQty;
+                        }
+                    }
+
+                    // Generate vertical ripples (fabric folds cascading down)
+                    // These create the vertical creases and folds in the flag
+                    for (let i = 0; i < rippleQty; i++) {
+                        // Vertical ripples that flow down
+                        const verticalFreq = (random() * 10 + 5) * rippleSize;
+                        // Space ripples evenly or randomly based on spacing
+                        const basePos = rippleSpacing < 1.0 ? (i / Math.max(rippleQty, 1)) : random();
+                        const horizontalPos = basePos + (random() - 0.5) * (1.0 - rippleSpacing) * 0.2;
+                        const phase = random() * Math.PI * 2;
+                        const amplitude = random() * 0.3 + 0.15;
+                        
+                        // Ripple width (how spread out horizontally) - affected by spacing
+                        const rippleWidth = (random() * 0.1 + 0.05) / Math.max(rippleSpacing, 0.1);
+
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const nx = x / width;
+                                const ny = y / height;
+                                
+                                // Distance from ripple center line
+                                const distFromCenter = Math.abs(nx - horizontalPos);
+                                
+                                // Vertical wave that fades horizontally
+                                const verticalWave = Math.sin(2 * Math.PI * verticalFreq * ny + phase);
+                                const horizontalFalloff = Math.exp(-distFromCenter / rippleWidth);
+                                
+                                // Add some horizontal variation for more organic folds
+                                const horizontalVariation = Math.sin(2 * Math.PI * verticalFreq * ny * 0.5 + phase * 1.3) * 0.3;
+                                const adjustedDist = Math.abs(nx - (horizontalPos + horizontalVariation));
+                                const falloff = Math.exp(-adjustedDist / rippleWidth);
+                                
+                                depthMap[y * width + x] += amplitude * verticalWave * falloff;
+                            }
+                        }
+                    }
+                    
+                    // Add some overall fabric texture with smaller waves (only if there are waves or ripples)
+                    // This adds subtle detail to the pattern
+                    if (waveQty > 0 || rippleQty > 0) {
+                        for (let i = 0; i < 5; i++) {
+                            const freqX = (random() * 5 + 3) * waveSize;
+                            const freqY = (random() * 5 + 3) * waveSize;
+                            const phaseX = random() * Math.PI * 2;
+                            const phaseY = random() * Math.PI * 2;
+                            const amplitude = 0.1;
+
+                            for (let y = 0; y < height; y++) {
+                                for (let x = 0; x < width; x++) {
+                                    const nx = x / width;
+                                    const ny = y / height;
+                                    const texture = Math.sin(2 * Math.PI * freqX * nx + phaseX) * 
+                                                   Math.sin(2 * Math.PI * freqY * ny + phaseY);
+                                    depthMap[y * width + x] += amplitude * texture;
+                                }
+                            }
+                        }
+                    }
+
+                    // Normalize to 0-1 range
+                    let min = depthMap[0];
+                    let max = depthMap[0];
+                    for (let i = 1; i < depthMap.length; i++) {
+                        if (depthMap[i] < min) min = depthMap[i];
+                        if (depthMap[i] > max) max = depthMap[i];
+                    }
+                    const range = max - min || 1;
+
+                    // If all values are the same (no pattern), create a flat gray
+                    if (range < 0.0001) {
+                        for (let i = 0; i < depthMap.length; i++) {
+                            depthMap[i] = 0.5; // Flat gray
+                        }
+                    } else {
+                        for (let i = 0; i < depthMap.length; i++) {
+                            depthMap[i] = (depthMap[i] - min) / range;
+                        }
+                    }
+
+                    // Store base depth map (before contrast) - create a copy
+                    baseDepthMap = new Float32Array(depthMap);
+                    
+                    // Update stored parameters
+                    lastParams.width = width;
+                    lastParams.height = height;
+                    lastParams.waveQty = waveQty;
+                    lastParams.waveSize = waveSize;
+                    lastParams.rippleQty = rippleQty;
+                    lastParams.rippleSize = rippleSize;
+
+                    // Apply contrast
+                    for (let i = 0; i < depthMap.length; i++) {
+                        depthMap[i] = (depthMap[i] - 0.5) * contrast + 0.5;
+                        depthMap[i] = Math.max(0, Math.min(1, depthMap[i]));
+                    }
+
+                    // Store for download (always store full resolution)
+                    if (!previewMode) {
+                        currentDepthMap = depthMap;
+                        currentWidth = fullWidth;
+                        currentHeight = fullHeight;
+                    } else {
+                        // For preview, we'll regenerate at full resolution when downloading
+                        currentWidth = fullWidth;
+                        currentHeight = fullHeight;
+                    }
+
+                    // Store depth map for 3D preview
+                    currentDepthMap3D = depthMap;
+                    currentDepthMap3DWidth = width;
+                    currentDepthMap3DHeight = height;
+                    
+                    // Reset camera pan when new pattern is generated (keep centered)
+                    cameraPan = { x: 0, y: 0 };
+
+                    // Render based on view mode
+                    if (view3DCheckbox.checked) {
+                        render3DPreview(depthMap, width, height);
+                    } else {
+                        render2DPreview(depthMap, width, height, fullWidth, fullHeight, previewMode);
+                    }
+
+                    loading.classList.remove('active');
+                    isGenerating = false;
+
+                } catch (error) {
+                    loading.classList.remove('active');
+                    infoText.style.display = 'block';
+                    infoText.textContent = 'Error: ' + error.message;
+                    console.error(error);
+                    isGenerating = false;
+                }
+            }, 10);
+        }
+
+        // Download image
+        function downloadImage() {
+            // Generate full resolution if we only have preview
+            if (!currentDepthMap || currentDepthMap.length !== currentWidth * currentHeight) {
+                loading.classList.add('active');
+                setTimeout(() => {
+                    generateDepthMap(false); // Generate full resolution
+                    setTimeout(() => {
+                        if (currentDepthMap) {
+                            performDownload();
+                        } else {
+                            alert('Please wait for generation to complete!');
+                            loading.classList.remove('active');
+                        }
+                    }, 100);
+                }, 10);
+                return;
+            }
+            performDownload();
+        }
+
+        function performDownload() {
+            if (!currentDepthMap) {
+                alert('Please generate a depth map first!');
+                return;
+            }
+
+            const bitDepth = document.querySelector('input[name="bitDepth"]:checked').value;
+            const width = currentWidth;
+            const height = currentHeight;
+
+            // Create a temporary canvas for the full resolution image
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            if (bitDepth === '16') {
+                // For 16-bit, we'll use PNG with grayscale
+                // Note: True 16-bit PNG requires special handling
+                // We'll create a high-quality 8-bit PNG that represents 16-bit data
+                const imageData = tempCtx.createImageData(width, height);
+                
+                for (let i = 0; i < currentDepthMap.length; i++) {
+                    // Map 0-1 to 0-65535, then to 0-255 for display
+                    const value16 = Math.floor(currentDepthMap[i] * 65535);
+                    const value8 = Math.floor(value16 / 256); // Convert to 8-bit for PNG
+                    const idx = i * 4;
+                    imageData.data[idx] = value8;
+                    imageData.data[idx + 1] = value8;
+                    imageData.data[idx + 2] = value8;
+                    imageData.data[idx + 3] = 255;
+                }
+
+                tempCtx.putImageData(imageData, 0, 0);
+                
+                tempCanvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `depth_map_${width}x${height}_16bit.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            } else {
+                // For 32-bit, create a TIFF-like representation
+                // Note: Browser can't natively create 32-bit TIFF, so we'll use PNG
+                // and note that true 32-bit requires server-side processing
+                const imageData = tempCtx.createImageData(width, height);
+                
+                for (let i = 0; i < currentDepthMap.length; i++) {
+                    const value = Math.floor(currentDepthMap[i] * 255);
+                    const idx = i * 4;
+                    imageData.data[idx] = value;
+                    imageData.data[idx + 1] = value;
+                    imageData.data[idx + 2] = value;
+                    imageData.data[idx + 3] = 255;
+                }
+
+                tempCtx.putImageData(imageData, 0, 0);
+                
+                tempCanvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `depth_map_${width}x${height}_32bit.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            }
+        }
+
+        // 2D Preview rendering
+        function render2DPreview(depthMap, width, height, fullWidth, fullHeight, previewMode) {
+            canvas.style.display = 'block';
+            canvas3D.style.display = 'none';
+            info3D.style.display = 'none';
+            
+            canvas.width = width;
+            canvas.height = height;
+            const imageData = ctx.createImageData(width, height);
+            
+            for (let i = 0; i < depthMap.length; i++) {
+                const value = Math.floor(depthMap[i] * 255);
+                const idx = i * 4;
+                imageData.data[idx] = value;     // R
+                imageData.data[idx + 1] = value; // G
+                imageData.data[idx + 2] = value; // B
+                imageData.data[idx + 3] = 255;   // A
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Scale canvas for preview if too large
+            const maxPreviewSize = 800;
+            if (width > maxPreviewSize || height > maxPreviewSize) {
+                const ratio = Math.min(maxPreviewSize / width, maxPreviewSize / height);
+                canvas.style.width = (width * ratio) + 'px';
+                canvas.style.height = (height * ratio) + 'px';
+            } else {
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+            }
+
+            infoText.style.display = 'block';
+            const displaySize = previewMode ? `${fullWidth}x${fullHeight}px (preview: ${width}x${height})` : `${fullWidth}x${fullHeight}px`;
+            infoText.textContent = `Size: ${displaySize} | Bit Depth: ${document.querySelector('input[name="bitDepth"]:checked').value}-bit`;
+        }
+
+        // 3D Preview rendering
+        function initWebGL() {
+            // Ensure canvas is visible (some browsers require this)
+            if (canvas3D.style.display === 'none') {
+                canvas3D.style.display = 'block';
+            }
+            
+            // Try multiple ways to get WebGL context
+            const contextAttributes = {
+                alpha: false,
+                antialias: true,
+                depth: true,
+                premultipliedAlpha: false,
+                preserveDrawingBuffer: false,
+                stencil: false,
+                failIfMajorPerformanceCaveat: false
+            };
+
+            // Try WebGL 1.0 first
+            try {
+                gl3D = canvas3D.getContext('webgl', contextAttributes) || 
+                       canvas3D.getContext('experimental-webgl', contextAttributes);
+            } catch (e) {
+                console.error('Error getting WebGL context:', e);
+                gl3D = null;
+            }
+            
+            if (!gl3D) {
+                // Check if WebGL is supported at all
+                const testCanvas = document.createElement('canvas');
+                let testGl = null;
+                try {
+                    testGl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+                } catch (e) {
+                    console.error('Error testing WebGL support:', e);
+                }
+                
+                if (!testGl) {
+                    console.error('WebGL is not supported in this browser');
+                    const message = 'WebGL is not supported in your browser.\n\n' +
+                                  'Please try:\n' +
+                                  '1. Using a modern browser (Chrome, Firefox, Edge, Safari)\n' +
+                                  '2. Enabling hardware acceleration in browser settings\n' +
+                                  '3. Updating your graphics drivers';
+                    alert(message);
+                    return false;
+                }
+                
+                // WebGL might be supported but context creation failed for this canvas
+                console.error('Failed to create WebGL context. This might be due to browser settings or hardware acceleration being disabled.');
+                const message = 'WebGL context creation failed.\n\n' +
+                              'Please check:\n' +
+                              '1. Hardware acceleration is enabled in browser settings\n' +
+                              '2. Browser is up to date\n' +
+                              '3. Graphics drivers are updated\n' +
+                              '4. No browser extensions are blocking WebGL';
+                alert(message);
+                return false;
+            }
+
+            // Check for required WebGL features
+            const debugInfo = gl3D.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                const vendor = gl3D.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                const renderer = gl3D.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                console.log('WebGL Vendor:', vendor);
+                console.log('WebGL Renderer:', renderer);
+            }
+            
+            // Verify WebGL is working
+            if (!gl3D.getParameter) {
+                console.error('WebGL context is invalid');
+                alert('WebGL context is invalid. Please refresh the page.');
+                return false;
+            }
+
+            // Vertex shader
+            const vertexShaderSource = `
+                attribute vec3 a_position;
+                attribute vec2 a_texCoord;
+                uniform mat4 u_modelViewProjection;
+                uniform float u_depthScale;
+                varying vec2 v_texCoord;
+                varying float v_depth;
+                
+                void main() {
+                    v_texCoord = a_texCoord;
+                    v_depth = a_position.z;
+                    vec3 pos = a_position;
+                    // Apply depth scale to make the 3D effect more visible
+                    // Map from 0-1 range to -0.5 to 0.5, then scale
+                    pos.z = (pos.z - 0.5) * u_depthScale;
+                    gl_Position = u_modelViewProjection * vec4(pos, 1.0);
+                }
+            `;
+
+            // Fragment shader
+            const fragmentShaderSource = `
+                precision mediump float;
+                varying vec2 v_texCoord;
+                varying float v_depth;
+                uniform sampler2D u_depthMap;
+                uniform vec3 u_lightDir;
+                uniform vec2 u_resolution;
+                uniform float u_depthScale;
+                
+                void main() {
+                    vec2 texelSize = 1.0 / u_resolution;
+                    // Read depth from texture (RGBA format, use red channel)
+                    float depth = texture2D(u_depthMap, v_texCoord).r;
+                    
+                    // Calculate normal from depth map using neighboring pixels
+                    float depthL = texture2D(u_depthMap, v_texCoord + vec2(-texelSize.x, 0.0)).r;
+                    float depthR = texture2D(u_depthMap, v_texCoord + vec2(texelSize.x, 0.0)).r;
+                    float depthU = texture2D(u_depthMap, v_texCoord + vec2(0.0, -texelSize.y)).r;
+                    float depthD = texture2D(u_depthMap, v_texCoord + vec2(0.0, texelSize.y)).r;
+                    
+                    // Calculate gradient for normal (scale for proper normal calculation)
+                    float dx = (depthR - depthL) * 8.0;
+                    float dy = (depthD - depthU) * 8.0;
+                    
+                    // Normal vector (pointing up from surface)
+                    vec3 normal = normalize(vec3(-dx, -dy, 1.0));
+                    
+                    // Ambient lighting (soft ambient for white flag)
+                    float ambient = 0.3;
+                    
+                    // Main directional lighting (from top-right-front)
+                    vec3 lightDir = normalize(u_lightDir);
+                    float diffuse = max(dot(normal, lightDir), 0.0);
+                    
+                    // Add rim lighting for depth (light from behind)
+                    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+                    float rim = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.0) * 0.2;
+                    
+                    // Combine lighting
+                    float light = ambient + diffuse * 0.9 + rim;
+                    
+                    // White flag color with lighting
+                    vec3 whiteFlag = vec3(1.0, 1.0, 1.0);
+                    
+                    // Apply lighting to white flag
+                    vec3 color = whiteFlag * light;
+                    
+                    // Add subtle shadows in valleys (darker areas)
+                    float shadowFactor = 1.0 - (depth - 0.5) * 0.3;
+                    color *= shadowFactor;
+                    
+                    // Ensure minimum brightness but allow for shadows
+                    color = max(color, vec3(0.15));
+                    
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `;
+
+            function createShader(type, source) {
+                const shader = gl3D.createShader(type);
+                gl3D.shaderSource(shader, source);
+                gl3D.compileShader(shader);
+                if (!gl3D.getShaderParameter(shader, gl3D.COMPILE_STATUS)) {
+                    console.error('Shader compile error:', gl3D.getShaderInfoLog(shader));
+                    gl3D.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+
+            const vertexShader = createShader(gl3D.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl3D.FRAGMENT_SHADER, fragmentShaderSource);
+
+            shaderProgram = gl3D.createProgram();
+            gl3D.attachShader(shaderProgram, vertexShader);
+            gl3D.attachShader(shaderProgram, fragmentShader);
+            gl3D.linkProgram(shaderProgram);
+
+            if (!gl3D.getProgramParameter(shaderProgram, gl3D.LINK_STATUS)) {
+                console.error('Program link error:', gl3D.getProgramInfoLog(shaderProgram));
+                return false;
+            }
+
+            gl3D.useProgram(shaderProgram);
+            gl3D.enable(gl3D.DEPTH_TEST);
+            gl3D.enable(gl3D.CULL_FACE);
+            return true;
+        }
+
+        function createMeshFromDepthMap(depthMap, width, height) {
+            const vertices = [];
+            const indices = [];
+            const texCoords = [];
+
+            // Create vertices
+            // Use depth values directly (they're already normalized 0-1)
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const nx = (x / width) * 2 - 1;  // -1 to 1
+                    const ny = 1 - (y / height) * 2;  // 1 to -1
+                    // Use depth directly - it will be scaled in the shader
+                    const depth = depthMap[y * width + x];
+                    
+                    vertices.push(nx, ny, depth);
+                    texCoords.push(x / width, y / height);
+                }
+            }
+
+            // Create indices for triangles
+            for (let y = 0; y < height - 1; y++) {
+                for (let x = 0; x < width - 1; x++) {
+                    const i = y * width + x;
+                    indices.push(i, i + width, i + 1);
+                    indices.push(i + 1, i + width, i + width + 1);
+                }
+            }
+
+            return { vertices, indices, texCoords };
+        }
+
+        function render3DPreview(depthMap, width, height) {
+            canvas.style.display = 'none';
+            canvas3D.style.display = 'block';
+            info3D.style.display = 'block';
+            infoText.style.display = 'block';
+            infoText.textContent = `3D Preview: ${width}x${height} | Bit Depth: ${document.querySelector('input[name="bitDepth"]:checked').value}-bit`;
+
+            // Set canvas size for 3D preview (use reasonable size for performance)
+            const maxPreviewSize = 600;
+            const displayWidth = Math.min(width, maxPreviewSize);
+            const displayHeight = Math.min(height, maxPreviewSize);
+            
+            // Always update canvas size to match current preview
+            canvas3D.width = displayWidth;
+            canvas3D.height = displayHeight;
+            canvas3D.style.width = displayWidth + 'px';
+            canvas3D.style.height = displayHeight + 'px';
+            
+            // Reset camera pan when regenerating new pattern (keep preview centered)
+            // Only keep pan if user is actively panning the current view
+            // Note: Pan resets when pattern changes, but rotation persists
+
+            // Initialize WebGL if needed
+            if (!gl3D) {
+                
+                // Small delay to ensure canvas is ready
+                try {
+                    if (!initWebGL()) {
+                        view3DCheckbox.checked = false;
+                        render2DPreview(depthMap, width, height, width, height, false);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('WebGL initialization error:', error);
+                    alert('Error initializing WebGL: ' + error.message + '\nFalling back to 2D view.');
+                    view3DCheckbox.checked = false;
+                    render2DPreview(depthMap, width, height, width, height, false);
+                    return;
+                }
+            }
+
+            // Create mesh
+            const mesh = createMeshFromDepthMap(depthMap, width, height);
+
+            // Create buffers
+            const vertexBuffer = gl3D.createBuffer();
+            gl3D.bindBuffer(gl3D.ARRAY_BUFFER, vertexBuffer);
+            gl3D.bufferData(gl3D.ARRAY_BUFFER, new Float32Array(mesh.vertices), gl3D.STATIC_DRAW);
+
+            const indexBuffer = gl3D.createBuffer();
+            gl3D.bindBuffer(gl3D.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            gl3D.bufferData(gl3D.ELEMENT_ARRAY_BUFFER, new Uint16Array(mesh.indices), gl3D.STATIC_DRAW);
+
+            // Create depth texture - use RGBA format for better compatibility
+            const texture = gl3D.createTexture();
+            gl3D.bindTexture(gl3D.TEXTURE_2D, texture);
+            const textureData = new Uint8Array(depthMap.length * 4);
+            for (let i = 0; i < depthMap.length; i++) {
+                const value = Math.floor(depthMap[i] * 255);
+                const idx = i * 4;
+                textureData[idx] = value;     // R
+                textureData[idx + 1] = value; // G
+                textureData[idx + 2] = value; // B
+                textureData[idx + 3] = 255;   // A
+            }
+            gl3D.texImage2D(gl3D.TEXTURE_2D, 0, gl3D.RGBA, width, height, 0, gl3D.RGBA, gl3D.UNSIGNED_BYTE, textureData);
+            gl3D.texParameteri(gl3D.TEXTURE_2D, gl3D.TEXTURE_MIN_FILTER, gl3D.LINEAR);
+            gl3D.texParameteri(gl3D.TEXTURE_2D, gl3D.TEXTURE_MAG_FILTER, gl3D.LINEAR);
+            gl3D.texParameteri(gl3D.TEXTURE_2D, gl3D.TEXTURE_WRAP_S, gl3D.CLAMP_TO_EDGE);
+            gl3D.texParameteri(gl3D.TEXTURE_2D, gl3D.TEXTURE_WRAP_T, gl3D.CLAMP_TO_EDGE);
+
+            // Set up attributes
+            const positionLoc = gl3D.getAttribLocation(shaderProgram, 'a_position');
+            const texCoordLoc = gl3D.getAttribLocation(shaderProgram, 'a_texCoord');
+
+            gl3D.bindBuffer(gl3D.ARRAY_BUFFER, vertexBuffer);
+            gl3D.enableVertexAttribArray(positionLoc);
+            gl3D.vertexAttribPointer(positionLoc, 3, gl3D.FLOAT, false, 0, 0);
+
+            // Create separate buffer for tex coords
+            const texCoordBuffer = gl3D.createBuffer();
+            gl3D.bindBuffer(gl3D.ARRAY_BUFFER, texCoordBuffer);
+            gl3D.bufferData(gl3D.ARRAY_BUFFER, new Float32Array(mesh.texCoords), gl3D.STATIC_DRAW);
+            gl3D.enableVertexAttribArray(texCoordLoc);
+            gl3D.vertexAttribPointer(texCoordLoc, 2, gl3D.FLOAT, false, 0, 0);
+
+            // Set up uniforms
+            const modelViewProjectionLoc = gl3D.getUniformLocation(shaderProgram, 'u_modelViewProjection');
+            const depthScaleLoc = gl3D.getUniformLocation(shaderProgram, 'u_depthScale');
+            const lightDirLoc = gl3D.getUniformLocation(shaderProgram, 'u_lightDir');
+            const depthMapLoc = gl3D.getUniformLocation(shaderProgram, 'u_depthMap');
+            const resolutionLoc = gl3D.getUniformLocation(shaderProgram, 'u_resolution');
+
+            // Calculate camera matrix
+            const aspect = canvas3D.width / canvas3D.height;
+            const near = 0.1;
+            const far = 100.0;
+
+            // Orthographic projection - scale to fit mesh (-1 to 1 range)
+            // Keep centered - don't use cameraPan in projection, use it in rotation/view matrix instead
+            const scale = 1.2; // Slightly larger to show full mesh
+            const projection = [
+                1 / (aspect * scale), 0, 0, 0,
+                0, 1 / scale, 0, 0,
+                0, 0, -2 / (far - near), 0,
+                0, 0, -(far + near) / (far - near), 1
+            ];
+
+            // Create rotation matrix for camera
+            const cosX = Math.cos(cameraRotation.x);
+            const sinX = Math.sin(cameraRotation.x);
+            const cosY = Math.cos(cameraRotation.y);
+            const sinY = Math.sin(cameraRotation.y);
+
+            // Create view matrix with rotation and pan
+            // First apply pan (translation), then rotation
+            const panMatrix = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                cameraPan.x, cameraPan.y, 0, 1
+            ];
+            
+            // Rotation matrix (rotate around origin)
+            const rotation = [
+                cosY, 0, sinY, 0,
+                sinX * sinY, cosX, -sinX * cosY, 0,
+                -cosX * sinY, sinX, cosX * cosY, 0,
+                0, 0, 0, 1
+            ];
+
+            // Combine: pan * rotation
+            const view = new Float32Array(16);
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    view[i * 4 + j] = 0;
+                    for (let k = 0; k < 4; k++) {
+                        view[i * 4 + j] += panMatrix[i * 4 + k] * rotation[k * 4 + j];
+                    }
+                }
+            }
+
+            // Multiply projection * view
+            const mvp = new Float32Array(16);
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    mvp[i * 4 + j] = 0;
+                    for (let k = 0; k < 4; k++) {
+                        mvp[i * 4 + j] += projection[i * 4 + k] * view[k * 4 + j];
+                    }
+                }
+            }
+
+            gl3D.uniformMatrix4fv(modelViewProjectionLoc, false, mvp);
+            gl3D.uniform1f(depthScaleLoc, 1.5); // Depth scale for 3D effect
+            gl3D.uniform2f(resolutionLoc, width, height); // Texture resolution for normal calculation
+            // Light direction - from top-right-front (adjusted for better flag lighting)
+            const lightX = 0.6;
+            const lightY = 0.4;
+            const lightZ = 0.8;
+            const lightLen = Math.sqrt(lightX * lightX + lightY * lightY + lightZ * lightZ);
+            gl3D.uniform3f(lightDirLoc, lightX / lightLen, lightY / lightLen, lightZ / lightLen);
+            gl3D.activeTexture(gl3D.TEXTURE0);
+            gl3D.bindTexture(gl3D.TEXTURE_2D, texture);
+            gl3D.uniform1i(depthMapLoc, 0);
+
+            // Clear and draw
+            gl3D.viewport(0, 0, canvas3D.width, canvas3D.height);
+            gl3D.clearColor(0.5, 0.5, 0.5, 1.0); // Neutral gray background like the example
+            gl3D.clear(gl3D.COLOR_BUFFER_BIT | gl3D.DEPTH_BUFFER_BIT);
+
+            // Make sure we're using the correct program and buffers
+            gl3D.useProgram(shaderProgram);
+            
+            // Re-bind buffers to ensure they're active
+            gl3D.bindBuffer(gl3D.ARRAY_BUFFER, vertexBuffer);
+            gl3D.enableVertexAttribArray(positionLoc);
+            gl3D.vertexAttribPointer(positionLoc, 3, gl3D.FLOAT, false, 0, 0);
+            
+            gl3D.bindBuffer(gl3D.ARRAY_BUFFER, texCoordBuffer);
+            gl3D.enableVertexAttribArray(texCoordLoc);
+            gl3D.vertexAttribPointer(texCoordLoc, 2, gl3D.FLOAT, false, 0, 0);
+            
+            gl3D.bindBuffer(gl3D.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            gl3D.drawElements(gl3D.TRIANGLES, mesh.indices.length, gl3D.UNSIGNED_SHORT, 0);
+        }
+
+        // Camera controls
+        canvas3D.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Left click
+                isDragging = true;
+            } else if (e.button === 2) { // Right click
+                isRightDragging = true;
+                e.preventDefault();
+            }
+            lastMousePos = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas3D.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = (e.clientX - lastMousePos.x) * 0.01;
+                const dy = (e.clientY - lastMousePos.y) * 0.01;
+                cameraRotation.y += dx;
+                cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x + dy));
+                if (currentDepthMap3D) {
+                    render3DPreview(currentDepthMap3D, currentDepthMap3DWidth, currentDepthMap3DHeight);
+                }
+            } else if (isRightDragging) {
+                const dx = (e.clientX - lastMousePos.x) * 0.002;
+                const dy = (e.clientY - lastMousePos.y) * 0.002;
+                cameraPan.x += dx;
+                cameraPan.y -= dy;
+                // Limit pan to keep preview mostly centered
+                cameraPan.x = Math.max(-0.5, Math.min(0.5, cameraPan.x));
+                cameraPan.y = Math.max(-0.5, Math.min(0.5, cameraPan.y));
+                if (currentDepthMap3D) {
+                    render3DPreview(currentDepthMap3D, currentDepthMap3DWidth, currentDepthMap3DHeight);
+                }
+            }
+            lastMousePos = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas3D.addEventListener('mouseup', () => {
+            isDragging = false;
+            isRightDragging = false;
+        });
+
+        canvas3D.addEventListener('mouseleave', () => {
+            isDragging = false;
+            isRightDragging = false;
+        });
+
+        canvas3D.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        canvas3D.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            cameraDistance += e.deltaY * 0.01;
+            cameraDistance = Math.max(1.0, Math.min(10.0, cameraDistance));
+            if (currentDepthMap3D) {
+                render3DPreview(currentDepthMap3D, currentDepthMap3DWidth, currentDepthMap3DHeight);
+            }
+        });
+
+        // Toggle 3D view
+        view3DCheckbox.addEventListener('change', () => {
+            if (currentDepthMap3D) {
+                if (view3DCheckbox.checked) {
+                    render3DPreview(currentDepthMap3D, currentDepthMap3DWidth, currentDepthMap3DHeight);
+                } else {
+                    render2DPreview(currentDepthMap3D, currentDepthMap3DWidth, currentDepthMap3DHeight, currentDepthMap3DWidth, currentDepthMap3DHeight, false);
+                }
+            }
+        });
+
+        // Event listeners
+        generateBtn.addEventListener('click', () => generateDepthMap(false)); // Full resolution on manual generate
+        downloadBtn.addEventListener('click', downloadImage);
+
+        // Generate on page load (preview mode)
+        window.addEventListener('load', () => {
+            generateDepthMap(true);
+        });
+    </script>
+</body>
+</html>
+

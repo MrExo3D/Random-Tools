@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Halftone Line Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #bf5926;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        
+        input[type="number"], input[type="range"] {
+            padding: 5px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #bf5926;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        button:hover {
+            background: #d6734a;
+        }
+        
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        .btn-load {
+            background: #4a9eff;
+        }
+        
+        .btn-load:hover {
+            background: #6bb0ff;
+        }
+        
+        .preview-area {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 600px;
+        }
+        
+        #previewCanvas {
+            max-width: 100%;
+            max-height: 80vh;
+            background: #fff;
+            border: 1px solid #555;
+        }
+        
+        .status {
+            margin-top: 10px;
+            text-align: center;
+            color: #888;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Halftone Line Generator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Load Image</label>
+                <input type="file" id="imageInput" accept="image/*">
+                <button class="btn-load" onclick="document.getElementById('imageInput').click()">Load Image</button>
+            </div>
+            
+            <div class="control-group">
+                <label for="lineSpacing">Line Spacing (inches)</label>
+                <input type="number" id="lineSpacing" step="0.01" value="0.3" min="0.01" max="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="minThickness">Min Thickness (inches)</label>
+                <input type="number" id="minThickness" step="0.001" value="0" min="0" max="0.1">
+            </div>
+            
+            <div class="control-group">
+                <label for="maxThickness">Max Thickness (inches)</label>
+                <input type="number" id="maxThickness" step="0.001" value="0.29" min="0" max="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="trimBelowThickness">Trim Below Thickness (inches)</label>
+                <input type="number" id="trimBelowThickness" step="0.001" value="0.01" min="0" max="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="lineAngle">Line Angle (degrees)</label>
+                <input type="number" id="lineAngle" step="1" value="45" min="0" max="360">
+            </div>
+            
+            <div class="control-group checkbox-group">
+                <input type="checkbox" id="taperEnds" checked>
+                <label for="taperEnds">Taper Ends</label>
+            </div>
+            
+            <div class="control-group">
+                <label for="taperLength">Taper Length (inches)</label>
+                <input type="number" id="taperLength" step="0.01" value="0.1" min="0" max="1">
+            </div>
+            
+            <div class="control-group checkbox-group">
+                <input type="checkbox" id="smooth" checked>
+                <label for="smooth">Smooth</label>
+            </div>
+            
+            <div class="control-group">
+                <label for="smoothIterations">Smooth Iterations</label>
+                <input type="number" id="smoothIterations" step="1" value="3" min="0" max="10">
+            </div>
+            
+            <div class="control-group">
+                <label for="lineType">Line Type</label>
+                <select id="lineType" class="input-field" style="min-width: 120px;">
+                    <option value="straight">Straight Segments</option>
+                    <option value="bezier">Bezier Curves</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="pointTolerance">Point Tolerance (inches)</label>
+                <input type="number" id="pointTolerance" step="0.001" value="0.01" min="0.001" max="0.1">
+            </div>
+            
+            <div class="control-group">
+                <label for="samplingStep">Sampling Step (pixels)</label>
+                <input type="number" id="samplingStep" step="0.5" value="0.5" min="0.5" max="10">
+            </div>
+            
+            <div class="control-group checkbox-group">
+                <input type="checkbox" id="showLines">
+                <label for="showLines">Show Lines (Blue)</label>
+            </div>
+            
+            <div class="control-group checkbox-group">
+                <input type="checkbox" id="invertColors">
+                <label for="invertColors">Invert Colors</label>
+            </div>
+            
+            <div class="control-group">
+                <label>Actions</label>
+                <button id="generateBtn" disabled>Generate</button>
+                <button id="exportBtn" disabled>Export SVG</button>
+            </div>
+        </div>
+        
+        <div class="preview-area">
+            <canvas id="previewCanvas" width="800" height="800"></canvas>
+        </div>
+        
+        <div class="status" id="status">Load an image to begin</div>
+        <div class="status" id="pointCount" style="margin-top: 5px;">Vector Points: 0</div>
+    </div>
+    
+    <script>
+        let sourceImage = null;
+        let sourceImageData = null;
+        let canvas = document.getElementById('previewCanvas');
+        let ctx = canvas.getContext('2d');
+        let lines = [];
+        
+        const DPI = 72; // Assume 72 DPI for canvas
+        const INCHES_TO_PX = DPI;
+        
+        // Load image
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    sourceImage = img;
+                    
+                    // Scale image to canvas size
+                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
+                    
+                    // Draw scaled image to canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, (canvas.width - scaledWidth) / 2, (canvas.height - scaledHeight) / 2, scaledWidth, scaledHeight);
+                    
+                    // Get image data for sampling
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0);
+                    sourceImageData = tempCtx.getImageData(0, 0, img.width, img.height);
+                    
+                    document.getElementById('generateBtn').disabled = false;
+                    document.getElementById('status').textContent = 'Image loaded. Click Generate to create halftone lines.';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Get brightness at pixel position
+        function getBrightness(x, y) {
+            if (!sourceImageData) return 0;
+            
+            const data = sourceImageData.data;
+            const w = sourceImageData.width;
+            const h = sourceImageData.height;
+            
+            // Clamp coordinates
+            const px = Math.floor(Math.max(0, Math.min(w - 1, x)));
+            const py = Math.floor(Math.max(0, Math.min(h - 1, y)));
+            
+            const idx = (py * w + px) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            
+            // Calculate luminance (0 = black, 1 = white)
+            const luminance = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+            
+            // If transparent, treat as black (no lines)
+            if (a < 128) return 0;
+            
+            return luminance;
+        }
+        
+        // Generate halftone lines
+        function generateLines() {
+            if (!sourceImage || !sourceImageData) return;
+            
+            lines = [];
+            
+            const lineSpacingIn = parseFloat(document.getElementById('lineSpacing').value) || 0.05;
+            const minThicknessIn = parseFloat(document.getElementById('minThickness').value) || 0;
+            const maxThicknessIn = parseFloat(document.getElementById('maxThickness').value) || 0.29;
+            const trimBelowThicknessInput = document.getElementById('trimBelowThickness');
+            const trimBelowThickness = trimBelowThicknessInput ? parseFloat(trimBelowThicknessInput.value) : null;
+            let angleDeg = parseFloat(document.getElementById('lineAngle').value) || 45;
+            const taperEnds = document.getElementById('taperEnds').checked;
+            const taperLength = parseFloat(document.getElementById('taperLength').value) || 0.1;
+            const smooth = document.getElementById('smooth').checked;
+            const smoothIterations = parseInt(document.getElementById('smoothIterations').value) || 3;
+            const pointTolerance = parseFloat(document.getElementById('pointTolerance').value) || 0.01;
+            const lineType = document.getElementById('lineType').value || 'straight';
+            const samplingStep = parseFloat(document.getElementById('samplingStep').value) || 0.5;
+            const showLines = document.getElementById('showLines').checked;
+            const invertColors = document.getElementById('invertColors').checked;
+            
+            // Convert angle to radians: 0 degrees = horizontal (flat), 90 degrees = vertical
+            // Adjust angle: subtract 90 to convert from "degrees from vertical" to "degrees from horizontal"
+            // This ensures 0° = horizontal (pointing right)
+            const adjustedAngleDeg = angleDeg - 90;
+            const angleRad = (adjustedAngleDeg * Math.PI) / 180;
+            const cosAngle = Math.cos(angleRad);
+            const sinAngle = Math.sin(angleRad);
+            
+            // Calculate canvas dimensions in inches
+            const canvasWidthIn = canvas.width / INCHES_TO_PX;
+            const canvasHeightIn = canvas.height / INCHES_TO_PX;
+            
+            // Calculate spacing in pixels
+            const spacingPx = lineSpacingIn * INCHES_TO_PX;
+            
+            // Calculate the diagonal extent to cover entire canvas
+            const diagonal = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+            const numLines = Math.ceil(diagonal / spacingPx) + 10;
+            
+            // Calculate the perpendicular distance between lines
+            const perpDist = spacingPx;
+            
+            // Calculate bounding box for lines
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Set colors based on invert setting
+            ctx.fillStyle = invertColors ? '#fff' : '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = invertColors ? '#000' : '#fff';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Generate lines
+            for (let i = -numLines / 2; i < numLines / 2; i++) {
+                // Calculate line position (perpendicular to line direction)
+                // For angle θ, perpendicular is at angle θ+90
+                // Line direction: (cosAngle, sinAngle)
+                // Perpendicular direction: (-sinAngle, cosAngle) for spacing
+                const perpOffset = i * perpDist;
+                
+                // Calculate line endpoints that cover the canvas
+                // For horizontal (0°): line goes left-right, perpendicular goes up-down
+                const lineLength = diagonal * 1.5;
+                const startX = centerX - (lineLength / 2) * cosAngle + perpOffset * sinAngle;
+                const startY = centerY - (lineLength / 2) * sinAngle - perpOffset * cosAngle;
+                const endX = centerX + (lineLength / 2) * cosAngle + perpOffset * sinAngle;
+                const endY = centerY + (lineLength / 2) * sinAngle - perpOffset * cosAngle;
+                
+                // Sample points along the line
+                const samples = [];
+                const numSamples = Math.ceil(lineLength / samplingStep); // Sample based on sampling step
+                
+                for (let j = 0; j <= numSamples; j++) {
+                    const t = j / numSamples;
+                    const x = startX + (endX - startX) * t;
+                    const y = startY + (endY - startY) * t;
+                    
+                    // Check if point is within canvas bounds
+                    if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
+                        // Map canvas coordinates to source image coordinates
+                        // Account for image scaling and centering
+                        const scale = Math.min(canvas.width / sourceImage.width, canvas.height / sourceImage.height);
+                        const scaledWidth = sourceImage.width * scale;
+                        const scaledHeight = sourceImage.height * scale;
+                        const offsetX = (canvas.width - scaledWidth) / 2;
+                        const offsetY = (canvas.height - scaledHeight) / 2;
+                        
+                        // Check if point is within the image bounds
+                        const relX = x - offsetX;
+                        const relY = y - offsetY;
+                        
+                        if (relX >= 0 && relX < scaledWidth && relY >= 0 && relY < scaledHeight) {
+                            // Map to source image coordinates
+                            const imgX = (relX / scale);
+                            const imgY = (relY / scale);
+                            
+                            const brightness = getBrightness(imgX, imgY);
+                            
+                            // Calculate thickness based on brightness
+                            // Bright = thick line, Dark = thin/no line
+                            const thickness = minThicknessIn + (maxThicknessIn - minThicknessIn) * brightness;
+                            
+                            samples.push({
+                                x: x,
+                                y: y,
+                                thickness: thickness,
+                                brightness: brightness
+                            });
+                        } else {
+                            // Outside image bounds - no line
+                            samples.push({
+                                x: x,
+                                y: y,
+                                thickness: 0,
+                                brightness: 0
+                            });
+                        }
+                    }
+                }
+                
+                // Apply smoothing if enabled - smooth both position and thickness
+                if (smooth && samples.length > 2) {
+                    for (let iter = 0; iter < smoothIterations; iter++) {
+                        const smoothed = [];
+                        for (let k = 0; k < samples.length; k++) {
+                            let sumThickness = 0;
+                            let sumX = 0;
+                            let sumY = 0;
+                            let count = 0;
+                            
+                            // Window size increases with iterations for smoother result
+                            const windowSize = Math.min(2 + iter, 5);
+                            
+                            // Average with neighbors (both position and thickness)
+                            for (let n = Math.max(0, k - windowSize); n <= Math.min(samples.length - 1, k + windowSize); n++) {
+                                sumThickness += samples[n].thickness;
+                                sumX += samples[n].x;
+                                sumY += samples[n].y;
+                                count++;
+                            }
+                            
+                            // Weighted average - center point has more influence
+                            const centerWeight = 2;
+                            const centerX = samples[k].x * centerWeight;
+                            const centerY = samples[k].y * centerWeight;
+                            const centerThickness = samples[k].thickness * centerWeight;
+                            
+                            const totalWeight = count + centerWeight;
+                            
+                            smoothed.push({
+                                x: (sumX + centerX) / totalWeight,
+                                y: (sumY + centerY) / totalWeight,
+                                thickness: (sumThickness + centerThickness) / totalWeight,
+                                brightness: samples[k].brightness
+                            });
+                        }
+                        samples.splice(0, samples.length, ...smoothed);
+                    }
+                }
+                
+                // Optimize: reduce points based on tolerance
+                if (samples.length > 2) {
+                    const optimized = [samples[0]]; // Always keep first point
+                    
+                    for (let i = 1; i < samples.length - 1; i++) {
+                        const prev = optimized[optimized.length - 1];
+                        const curr = samples[i];
+                        const next = samples[i + 1];
+                        
+                        // Calculate distance from previous point
+                        const dx = curr.x - prev.x;
+                        const dy = curr.y - prev.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // Calculate angle change
+                        const dx1 = curr.x - prev.x;
+                        const dy1 = curr.y - prev.y;
+                        const dx2 = next.x - curr.x;
+                        const dy2 = next.y - curr.y;
+                        const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                        const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                        
+                        // Keep point if:
+                        // - Distance is significant
+                        // - Angle change is significant
+                        // - Thickness change is significant
+                        const thicknessChange = Math.abs(curr.thickness - prev.thickness);
+                        const thicknessChangeNext = Math.abs(next.thickness - curr.thickness);
+                        
+                        if (dist > pointTolerance * INCHES_TO_PX || 
+                            (len1 > 0.001 && len2 > 0.001 && Math.abs((dx1/len1) * (dx2/len2) + (dy1/len1) * (dy2/len2)) < 0.99) ||
+                            thicknessChange > (maxThicknessIn - minThicknessIn) * 0.05 ||
+                            thicknessChangeNext > (maxThicknessIn - minThicknessIn) * 0.05) {
+                            optimized.push(curr);
+                        }
+                    }
+                    
+                    // Always keep last point
+                    if (samples.length > 1) {
+                        optimized.push(samples[samples.length - 1]);
+                    }
+                    
+                    samples.splice(0, samples.length, ...optimized);
+                }
+                
+                // Split line into sections where thickness is above min threshold
+                if (samples.length > 1) {
+                    const sections = [];
+                    let currentSection = [];
+                    
+                    for (let k = 0; k < samples.length; k++) {
+                        const sample = samples[k];
+                        
+                        // Check if thickness is above minimum threshold
+                        if (sample.thickness > minThicknessIn * 1.01) {
+                            // Above threshold - add to current section
+                            currentSection.push(sample);
+                        } else {
+                            // Below threshold - save current section if it has points
+                            if (currentSection.length > 1) {
+                                sections.push([...currentSection]);
+                                currentSection = [];
+                            } else {
+                                currentSection = [];
+                            }
+                        }
+                    }
+                    
+                    // Don't forget the last section
+                    if (currentSection.length > 1) {
+                        sections.push(currentSection);
+                    }
+                    
+                    // Store each section as a separate line
+                    // Filter out sections that are thinner than trimBelowThickness (if set)
+                    for (const section of sections) {
+                        // Check if section is thinner than trim threshold
+                        if (trimBelowThickness !== null && !isNaN(trimBelowThickness) && trimBelowThickness > 0) {
+                            const maxSectionThickness = Math.max(...section.map(s => s.thickness));
+                            if (maxSectionThickness < trimBelowThickness) {
+                                continue; // Skip this section (too thin)
+                            }
+                        }
+                        
+                        // Additional check: ensure section has meaningful thickness
+                        const maxThickness = Math.max(...section.map(s => s.thickness));
+                        if (maxThickness <= minThicknessIn * 1.01) {
+                            continue; // Skip sections that are effectively at minimum thickness
+                        }
+                        
+                        const svgPoints = section.map(s => ({
+                            x: s.x / INCHES_TO_PX,
+                            y: s.y / INCHES_TO_PX,
+                            thickness: s.thickness,
+                            brightness: s.brightness
+                        }));
+                        
+                        lines.push({
+                            points: svgPoints,
+                            taperEnds: taperEnds
+                        });
+                    }
+                    
+                    // Draw preview with variable thickness
+                    // Draw each section separately with its own taper calculation
+                    for (const section of sections) {
+                        if (section.length < 2) continue;
+                        
+                        // Calculate cumulative distances along THIS section for taper calculation
+                        const sectionDistances = [];
+                        let cumulativeDist = 0;
+                        sectionDistances.push(0);
+                        for (let k = 1; k < section.length; k++) {
+                            const dx = section[k].x - section[k-1].x;
+                            const dy = section[k].y - section[k-1].y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) / INCHES_TO_PX; // Distance in inches
+                            cumulativeDist += dist;
+                            sectionDistances.push(cumulativeDist);
+                        }
+                        const sectionLength = cumulativeDist;
+                        
+                        // Draw segments of this section with taper
+                        for (let k = 0; k < section.length - 1; k++) {
+                            const s1 = section[k];
+                            const s2 = section[k + 1];
+                            
+                            // Use average thickness for this segment
+                            let avgThickness = (s1.thickness + s2.thickness) / 2;
+                            
+                            // Apply tapering at ends if enabled - relative to THIS section
+                            if (taperEnds && taperLength > 0 && sectionLength > 0) {
+                                const segmentMidpointDist = (sectionDistances[k] + sectionDistances[k + 1]) / 2;
+                                const distFromStart = segmentMidpointDist;
+                                const distFromEnd = sectionLength - segmentMidpointDist;
+                                
+                                // Taper at start - linear fade from 0 to full thickness
+                                let startTaperFactor = 1.0;
+                                if (distFromStart < taperLength) {
+                                    startTaperFactor = distFromStart / taperLength;
+                                }
+                                
+                                // Taper at end - linear fade from full thickness to 0
+                                let endTaperFactor = 1.0;
+                                if (distFromEnd < taperLength) {
+                                    endTaperFactor = distFromEnd / taperLength;
+                                }
+                                
+                                // Apply both tapers (use minimum if both are active)
+                                avgThickness = avgThickness * Math.min(startTaperFactor, endTaperFactor);
+                            }
+                            
+                            // Skip if below trim threshold (too thin)
+                            if (trimBelowThickness !== null && !isNaN(trimBelowThickness) && trimBelowThickness > 0 && avgThickness < trimBelowThickness) {
+                                continue;
+                            }
+                            
+                            const thicknessPx = avgThickness * INCHES_TO_PX;
+                            
+                            if (thicknessPx > 0.1) { // Only draw if thick enough
+                                ctx.beginPath();
+                                ctx.lineWidth = thicknessPx;
+                                ctx.moveTo(s1.x, s1.y);
+                                ctx.lineTo(s2.x, s2.y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Draw blue lines to show SVG paths if enabled
+            if (showLines) {
+                ctx.strokeStyle = '#0080ff'; // Blue color
+                ctx.lineWidth = 1;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                for (const line of lines) {
+                    if (line.points.length < 2) continue;
+                    
+                    // Skip lines that have no meaningful thickness (all points at or near minimum)
+                    const maxThickness = Math.max(...line.points.map(p => p.thickness));
+                    const minThicknessIn = parseFloat(document.getElementById('minThickness').value) || 0;
+                    if (maxThickness <= minThicknessIn * 1.01) {
+                        continue; // Skip lines with no meaningful thickness
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(line.points[0].x * INCHES_TO_PX, line.points[0].y * INCHES_TO_PX);
+                    
+                    for (let i = 1; i < line.points.length; i++) {
+                        ctx.lineTo(line.points[i].x * INCHES_TO_PX, line.points[i].y * INCHES_TO_PX);
+                    }
+                    
+                    ctx.stroke();
+                }
+            }
+            
+            document.getElementById('exportBtn').disabled = false;
+            const totalPoints = lines.reduce((sum, line) => sum + line.points.length, 0);
+            document.getElementById('status').textContent = `Generated ${lines.length} line segments`;
+            document.getElementById('pointCount').textContent = `Vector Points: ${totalPoints}`;
+        }
+        
+        // Export to SVG
+        function exportSVG() {
+            if (lines.length === 0) return;
+            
+            const invertColors = document.getElementById('invertColors').checked;
+            const bgColor = invertColors ? '#ffffff' : '#000000';
+            const lineColor = invertColors ? '#000000' : '#ffffff';
+            
+            const canvasWidthIn = canvas.width / INCHES_TO_PX;
+            const canvasHeightIn = canvas.height / INCHES_TO_PX;
+            
+            let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            svg += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasWidthIn} ${canvasHeightIn}" width="${canvasWidthIn}in" height="${canvasHeightIn}in">\n`;
+            svg += `<rect width="100%" height="100%" fill="${bgColor}"/>\n`;
+            
+            // Draw each line as a single outlined shape
+            const lineType = document.getElementById('lineType').value || 'straight';
+            
+            for (const line of lines) {
+                if (line.points.length < 2) continue;
+                
+                // Create outline shape for variable-width line
+                const leftSide = [];
+                const rightSide = [];
+                const taperLength = parseFloat(document.getElementById('taperLength').value) || 0.1;
+                
+                // Calculate cumulative distances along the line for taper calculation
+                const lineDistances = [];
+                let cumulativeDist = 0;
+                lineDistances.push(0);
+                for (let i = 1; i < line.points.length; i++) {
+                    const dx = line.points[i].x - line.points[i-1].x;
+                    const dy = line.points[i].y - line.points[i-1].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy); // Distance in inches
+                    cumulativeDist += dist;
+                    lineDistances.push(cumulativeDist);
+                }
+                const totalLineLength = cumulativeDist;
+                
+                // Calculate perpendicular vectors and create outline
+                for (let i = 0; i < line.points.length; i++) {
+                    const p = line.points[i];
+                    let thickness = p.thickness;
+                    
+                    // Apply tapering at ends if enabled
+                    // Both ends taper: start fades from 0 to full, end fades from full to 0
+                    if (line.taperEnds && taperLength > 0 && totalLineLength > 0) {
+                        const distFromStart = lineDistances[i];
+                        const distFromEnd = totalLineLength - lineDistances[i];
+                        
+                        // Taper at start - linear fade from 0 to full thickness
+                        let startTaperFactor = 1.0;
+                        if (distFromStart < taperLength) {
+                            startTaperFactor = distFromStart / taperLength;
+                        }
+                        
+                        // Taper at end - linear fade from full thickness to 0
+                        let endTaperFactor = 1.0;
+                        if (distFromEnd < taperLength) {
+                            endTaperFactor = distFromEnd / taperLength;
+                        }
+                        
+                        // Apply both tapers (use minimum if both are active - for very short lines)
+                        thickness = thickness * Math.min(startTaperFactor, endTaperFactor);
+                    }
+                    
+                    if (thickness < 0.0001) continue;
+                    
+                    // Calculate direction vector
+                    let dx = 0, dy = 0;
+                    if (i === 0) {
+                        // First point: use direction to next
+                        dx = line.points[i + 1].x - p.x;
+                        dy = line.points[i + 1].y - p.y;
+                    } else if (i === line.points.length - 1) {
+                        // Last point: use direction from previous
+                        dx = p.x - line.points[i - 1].x;
+                        dy = p.y - line.points[i - 1].y;
+                    } else {
+                        // Middle point: average direction
+                        dx = (line.points[i + 1].x - line.points[i - 1].x) / 2;
+                        dy = (line.points[i + 1].y - line.points[i - 1].y) / 2;
+                    }
+                    
+                    // Normalize direction
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    if (len > 0.0001) {
+                        dx /= len;
+                        dy /= len;
+                    } else {
+                        // Fallback if no direction
+                        dx = 1;
+                        dy = 0;
+                    }
+                    
+                    // Perpendicular vector (90 degrees counter-clockwise)
+                    const perpX = -dy;
+                    const perpY = dx;
+                    
+                    // Offset distance (half thickness)
+                    const offset = thickness / 2;
+                    
+                    // Create two points on either side of the line
+                    const leftX = p.x + perpX * offset;
+                    const leftY = p.y + perpY * offset;
+                    const rightX = p.x - perpX * offset;
+                    const rightY = p.y - perpY * offset;
+                    
+                    leftSide.push({ x: leftX, y: leftY });
+                    rightSide.push({ x: rightX, y: rightY });
+                }
+                
+                // Create closed path: left side forward, right side backward
+                if (leftSide.length > 0 && rightSide.length > 0) {
+                    let path = `M ${leftSide[0].x.toFixed(4)} ${leftSide[0].y.toFixed(4)}`;
+                    
+                    if (lineType === 'bezier' && leftSide.length > 2) {
+                        // Use Bezier curves for smooth transitions
+                        // Left side with quadratic Bezier curves
+                        for (let i = 1; i < leftSide.length; i++) {
+                            if (i === 1) {
+                                // First segment - use Q (quadratic) curve
+                                const cp = leftSide[i];
+                                const end = i < leftSide.length - 1 ? {
+                                    x: (leftSide[i].x + leftSide[i + 1].x) / 2,
+                                    y: (leftSide[i].y + leftSide[i + 1].y) / 2
+                                } : leftSide[i];
+                                path += ` Q ${cp.x.toFixed(4)} ${cp.y.toFixed(4)} ${end.x.toFixed(4)} ${end.y.toFixed(4)}`;
+                            } else if (i < leftSide.length - 1) {
+                                // Middle segments - use smooth quadratic (T) or continue Q
+                                const cp = leftSide[i];
+                                const end = {
+                                    x: (leftSide[i].x + leftSide[i + 1].x) / 2,
+                                    y: (leftSide[i].y + leftSide[i + 1].y) / 2
+                                };
+                                path += ` Q ${cp.x.toFixed(4)} ${cp.y.toFixed(4)} ${end.x.toFixed(4)} ${end.y.toFixed(4)}`;
+                            } else {
+                                // Last point
+                                path += ` L ${leftSide[i].x.toFixed(4)} ${leftSide[i].y.toFixed(4)}`;
+                            }
+                        }
+                        
+                        // Right side (reverse order) with Bezier curves
+                        for (let i = rightSide.length - 1; i >= 0; i--) {
+                            if (i === rightSide.length - 1) {
+                                // First point on right side
+                                path += ` L ${rightSide[i].x.toFixed(4)} ${rightSide[i].y.toFixed(4)}`;
+                            } else if (i > 0) {
+                                // Middle segments - use quadratic Bezier
+                                const cp = rightSide[i];
+                                const end = {
+                                    x: (rightSide[i].x + rightSide[i - 1].x) / 2,
+                                    y: (rightSide[i].y + rightSide[i - 1].y) / 2
+                                };
+                                path += ` Q ${cp.x.toFixed(4)} ${cp.y.toFixed(4)} ${end.x.toFixed(4)} ${end.y.toFixed(4)}`;
+                            } else {
+                                // Last point (connects back to start)
+                                path += ` L ${rightSide[i].x.toFixed(4)} ${rightSide[i].y.toFixed(4)}`;
+                            }
+                        }
+                    } else {
+                        // Straight segments
+                        // Left side
+                        for (let i = 1; i < leftSide.length; i++) {
+                            path += ` L ${leftSide[i].x.toFixed(4)} ${leftSide[i].y.toFixed(4)}`;
+                        }
+                        
+                        // Right side (reverse order)
+                        for (let i = rightSide.length - 1; i >= 0; i--) {
+                            path += ` L ${rightSide[i].x.toFixed(4)} ${rightSide[i].y.toFixed(4)}`;
+                        }
+                    }
+                    
+                    path += ` Z`; // Close path
+                    
+                    svg += `<path d="${path}" fill="${lineColor}" stroke="none"/>\n`;
+                }
+            }
+            
+            svg += `</svg>`;
+            
+            // Download
+            const blob = new Blob([svg], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'halftone_lines.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        document.getElementById('generateBtn').addEventListener('click', generateLines);
+        document.getElementById('exportBtn').addEventListener('click', exportSVG);
+        
+        // Auto-generate when controls change
+        ['lineSpacing', 'minThickness', 'maxThickness', 'trimBelowThickness', 'lineAngle', 'taperEnds', 'taperLength', 'smooth', 'smoothIterations', 'pointTolerance', 'lineType', 'samplingStep', 'showLines', 'invertColors'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', function() {
+                    if (sourceImage) {
+                        generateLines();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
