@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .control-item {
+            margin-bottom: 20px;
+        }
+
+        .control-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .slider::-moz-range-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .preview-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .preview-header h3 {
+            color: #333;
+        }
+
+        .preview-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: auto;
+            max-height: 70vh;
+        }
+
+        #asciiOutput {
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            line-height: 1;
+            letter-spacing: 0;
+            margin: 0;
+            padding: 10px;
+            background: #000;
+            color: #0f0;
+            border-radius: 5px;
+            font-size: 8px;
+            overflow: auto;
+        }
+
+        .info-text {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 ASCII Art Generator</h1>
+            <p>Convert images to ASCII text graphics</p>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Image Input</h3>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="imageInput" accept="image/*">
+                        <label for="imageInput" class="file-input-label">Choose Image</label>
+                    </div>
+                    <div id="imagePreview" style="margin-top: 15px; display: none;">
+                        <img id="previewImg" class="image-preview" alt="Preview">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Output Settings</h3>
+                    <div class="control-item">
+                        <label for="width">Width (characters): <span class="value-display" id="widthValue">80</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="width" class="slider" min="20" max="200" value="80" step="1">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="charSet">Character Set: <span class="value-display" id="charSetValue">Standard</span></label>
+                        <select id="charSet" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <option value="standard">Standard (@#$%&*+=-:;., )</option>
+                            <option value="dense">Dense (█▓▒░ )</option>
+                            <option value="blocks">Blocks (█▓▒░▄▀ )</option>
+                            <option value="simple">Simple (.# )</option>
+                            <option value="detailed">Detailed (█▓▒░▄▀· )</option>
+                            <option value="shaded">Shaded (█▓▒░▄▀·. )</option>
+                            <option value="gradient">Gradient (█▓▒░▄▀·:;,. )</option>
+                            <option value="artistic">Artistic (@%#*+=-:. )</option>
+                            <option value="minimal">Minimal (█░ )</option>
+                            <option value="classic">Classic ($@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`'. )</option>
+                            <option value="binary">Binary (01 )</option>
+                            <option value="dots">Dots (●○· )</option>
+                            <option value="squares">Squares (■□▢▣ )</option>
+                            <option value="circles">Circles (●○◉◯ )</option>
+                            <option value="stars">Stars (★☆✦✧ )</option>
+                            <option value="lines">Lines (║═╔╗╚╝ )</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <label for="invert">Invert Colors</label>
+                        <input type="checkbox" id="invert" style="width: 18px; height: 18px; margin-top: 5px;">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Processing</h3>
+                    <div class="control-item">
+                        <label for="brightness">Brightness: <span class="value-display" id="brightnessValue">0.0</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="brightness" class="slider" min="-1.0" max="1.0" value="0.0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="contrast">Contrast: <span class="value-display" id="contrastValue">1.0</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="contrast" class="slider" min="0.1" max="3.0" value="1.0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Preview Settings</h3>
+                    <div class="control-item">
+                        <label for="previewSize">Preview Font Size: <span class="value-display" id="previewSizeValue">8</span>px</label>
+                        <div class="slider-container">
+                            <input type="range" id="previewSize" class="slider" min="4" max="20" value="8" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="generateBtn">Generate ASCII</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button class="btn btn-secondary" id="copyDiscordBtn">Copy for Discord</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button class="btn btn-secondary" id="downloadTxtBtn">Download TXT</button>
+                    <button class="btn btn-secondary" id="downloadSvgBtn">Download SVG</button>
+                    <button class="btn btn-secondary" id="downloadJpgBtn">Download JPG</button>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="preview-header">
+                    <h3>ASCII Output</h3>
+                </div>
+                <div class="preview-container">
+                    <div class="loading" id="loading">Processing image...</div>
+                    <div id="asciiOutput" style="display: none;"></div>
+                    <div class="info-text" id="infoText">Upload an image and click Generate to create ASCII art</div>
+                    <div class="info-text" style="margin-top: 10px; color: #667eea; font-size: 0.85em;">
+                        💡 Tip: Use "Copy for Discord" to preserve formatting when pasting to Discord (wraps in code blocks)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const imageInput = document.getElementById('imageInput');
+        const previewImg = document.getElementById('previewImg');
+        const imagePreview = document.getElementById('imagePreview');
+        const widthSlider = document.getElementById('width');
+        const widthValue = document.getElementById('widthValue');
+        const charSetSelect = document.getElementById('charSet');
+        const charSetValue = document.getElementById('charSetValue');
+        const invertCheckbox = document.getElementById('invert');
+        const brightnessSlider = document.getElementById('brightness');
+        const brightnessValue = document.getElementById('brightnessValue');
+        const contrastSlider = document.getElementById('contrast');
+        const contrastValue = document.getElementById('contrastValue');
+        const previewSizeSlider = document.getElementById('previewSize');
+        const previewSizeValue = document.getElementById('previewSizeValue');
+        const generateBtn = document.getElementById('generateBtn');
+        const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+        const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+        const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+        const downloadJpgBtn = document.getElementById('downloadJpgBtn');
+        const asciiOutput = document.getElementById('asciiOutput');
+        const loading = document.getElementById('loading');
+        const infoText = document.getElementById('infoText');
+
+        // Character sets
+        const charSets = {
+            standard: '@#$%&*+=-:;., ',
+            dense: '█▓▒░ ',
+            blocks: '█▓▒░▄▀ ',
+            simple: '.# ',
+            detailed: '█▓▒░▄▀· ',
+            shaded: '█▓▒░▄▀·. ',
+            gradient: '█▓▒░▄▀·:;,. ',
+            artistic: '@%#*+=-:. ',
+            minimal: '█░ ',
+            classic: '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`\'. ',
+            binary: '01 ',
+            dots: '●○· ',
+            squares: '■□▢▣ ',
+            circles: '●○◉◯ ',
+            stars: '★☆✦✧ ',
+            lines: '║═╔╗╚╝ '
+        };
+
+        let currentImage = null;
+        let currentAscii = '';
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
+
+        // Update value displays
+        widthSlider.addEventListener('input', (e) => {
+            widthValue.textContent = e.target.value;
+        });
+
+        brightnessSlider.addEventListener('input', (e) => {
+            brightnessValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        contrastSlider.addEventListener('input', (e) => {
+            contrastValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        previewSizeSlider.addEventListener('input', (e) => {
+            previewSizeValue.textContent = e.target.value;
+            if (currentAscii) {
+                updatePreviewSize();
+            }
+        });
+
+        charSetSelect.addEventListener('change', (e) => {
+            charSetValue.textContent = e.target.options[e.target.selectedIndex].text;
+        });
+
+        // Handle image upload
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    previewImg.src = event.target.result;
+                    imagePreview.style.display = 'block';
+                    currentImage = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Generate ASCII art
+        function generateASCII() {
+            if (!currentImage) {
+                alert('Please upload an image first!');
+                return;
+            }
+
+            loading.classList.add('active');
+            asciiOutput.style.display = 'none';
+            infoText.style.display = 'none';
+
+            setTimeout(() => {
+                try {
+                    const img = new Image();
+                    img.onload = () => {
+                        // Store original image dimensions
+                        originalImageWidth = img.width;
+                        originalImageHeight = img.height;
+                        
+                        const width = parseInt(widthSlider.value);
+                        const charSet = charSets[charSetSelect.value];
+                        const invert = invertCheckbox.checked;
+                        const brightness = parseFloat(brightnessSlider.value);
+                        const contrast = parseFloat(contrastSlider.value);
+
+                        // Calculate height to maintain aspect ratio
+                        const aspectRatio = img.height / img.width;
+                        const height = Math.floor(width * aspectRatio * 0.5); // 0.5 for character aspect ratio
+
+                        // Create canvas to process image
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+
+                        // Draw and process image
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const imageData = ctx.getImageData(0, 0, width, height);
+                        const data = imageData.data;
+
+                        // Process pixels and convert to ASCII
+                        let ascii = '';
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const idx = (y * width + x) * 4;
+                                const r = data[idx];
+                                const g = data[idx + 1];
+                                const b = data[idx + 2];
+
+                                // Convert to grayscale
+                                let gray = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+
+                                // Apply brightness
+                                gray = gray + brightness;
+                                gray = Math.max(0, Math.min(1, gray));
+
+                                // Apply contrast
+                                gray = (gray - 0.5) * contrast + 0.5;
+                                gray = Math.max(0, Math.min(1, gray));
+
+                                // Invert if needed
+                                if (invert) {
+                                    gray = 1 - gray;
+                                }
+
+                                // Map to character
+                                const charIndex = Math.floor(gray * (charSet.length - 1));
+                                ascii += charSet[charIndex];
+                            }
+                            ascii += '\n';
+                        }
+
+                        currentAscii = ascii;
+                        asciiOutput.textContent = ascii;
+                        updatePreviewSize();
+
+                        asciiOutput.style.display = 'block';
+                        infoText.style.display = 'block';
+                        infoText.textContent = `Size: ${width}x${height} characters | Character set: ${charSetSelect.options[charSetSelect.selectedIndex].text}`;
+                        loading.classList.remove('active');
+                    };
+                    img.src = currentImage;
+                } catch (error) {
+                    loading.classList.remove('active');
+                    infoText.style.display = 'block';
+                    infoText.textContent = 'Error: ' + error.message;
+                    console.error(error);
+                }
+            }, 10);
+        }
+
+        // Update preview font size
+        function updatePreviewSize() {
+            if (currentAscii) {
+                const fontSize = parseInt(previewSizeSlider.value);
+                asciiOutput.style.fontSize = fontSize + 'px';
+            }
+        }
+
+        // Download ASCII text
+        function downloadTXT() {
+            if (!currentAscii) {
+                alert('Please generate ASCII art first!');
+                return;
+            }
+
+            const blob = new Blob([currentAscii], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ascii_art.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Download ASCII as SVG
+        function downloadSVG() {
+            if (!currentAscii) {
+                alert('Please generate ASCII art first!');
+                return;
+            }
+
+            const lines = currentAscii.split('\n');
+            const fontSize = parseInt(previewSizeSlider.value);
+            const lineHeight = fontSize * 1.2;
+            const width = lines[0] ? lines[0].length * fontSize * 0.6 : 100;
+            const height = lines.length * lineHeight;
+
+            // Create SVG
+            let svg = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            svg += '<svg xmlns="http://www.w3.org/2000/svg" ';
+            svg += `width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n`;
+            svg += '<rect width="100%" height="100%" fill="#000"/>\n';
+            svg += `<text x="0" y="${fontSize}" font-family="Courier New, monospace" font-size="${fontSize}" fill="#0f0" xml:space="preserve">\n`;
+
+            // Add each line as a tspan
+            lines.forEach((line, index) => {
+                if (line.length > 0) {
+                    // Escape XML special characters
+                    const escapedLine = line
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&apos;');
+                    
+                    const y = (index + 1) * lineHeight;
+                    svg += `  <tspan x="0" y="${y}">${escapedLine}</tspan>\n`;
+                }
+            });
+
+            svg += '</text>\n';
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ascii_art.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Copy for Discord (wraps in code blocks)
+        function copyForDiscord() {
+            if (!currentAscii) {
+                alert('Please generate ASCII art first!');
+                return;
+            }
+
+            // Wrap in Discord code block (triple backticks) to preserve monospace
+            const discordFormatted = '```\n' + currentAscii + '\n```';
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(discordFormatted).then(() => {
+                // Show feedback
+                const originalText = copyDiscordBtn.textContent;
+                copyDiscordBtn.textContent = 'Copied!';
+                copyDiscordBtn.style.background = '#28a745';
+                setTimeout(() => {
+                    copyDiscordBtn.textContent = originalText;
+                    copyDiscordBtn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                // Fallback: select text
+                const textarea = document.createElement('textarea');
+                textarea.value = discordFormatted;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = copyDiscordBtn.textContent;
+                    copyDiscordBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyDiscordBtn.textContent = originalText;
+                    }, 2000);
+                } catch (err) {
+                    alert('Failed to copy. Please copy manually.');
+                }
+                document.body.removeChild(textarea);
+            });
+        }
+
+        // Download ASCII as JPG
+        function downloadJPG() {
+            if (!currentAscii) {
+                alert('Please generate ASCII art first!');
+                return;
+            }
+
+            if (originalImageWidth === 0 || originalImageHeight === 0) {
+                alert('Image dimensions not available. Please regenerate ASCII art.');
+                return;
+            }
+
+            const lines = currentAscii.split('\n').filter(line => line.length > 0);
+            if (lines.length === 0) {
+                alert('No ASCII art to export!');
+                return;
+            }
+
+            const targetWidth = 1000;
+            // Calculate height based on original image aspect ratio
+            const aspectRatio = originalImageHeight / originalImageWidth;
+            const targetHeight = Math.floor(targetWidth * aspectRatio);
+            
+            const maxLineLength = Math.max(...lines.map(line => line.length));
+            
+            // Calculate font size to fit 1000px width
+            // Approximate: each character is about 0.6x the font size in width
+            const fontSize = Math.floor(targetWidth / maxLineLength / 0.6);
+            const lineHeight = fontSize * 1.2;
+
+            // Create canvas with aspect ratio matching original image
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            // Set background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+            // Set text style
+            ctx.fillStyle = '#00ff00'; // Green text like terminal
+            ctx.font = `${fontSize}px 'Courier New', monospace`;
+            ctx.textBaseline = 'top';
+
+            // Draw each line
+            lines.forEach((line, index) => {
+                const y = index * lineHeight;
+                ctx.fillText(line, 0, y);
+            });
+
+            // Convert to JPG and download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ascii_art.jpg';
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/jpeg', 0.95); // 95% quality
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', generateASCII);
+        copyDiscordBtn.addEventListener('click', copyForDiscord);
+        downloadTxtBtn.addEventListener('click', downloadTXT);
+        downloadSvgBtn.addEventListener('click', downloadSVG);
+        downloadJpgBtn.addEventListener('click', downloadJPG);
+
+        // Auto-generate on settings change
+        widthSlider.addEventListener('input', () => {
+            if (currentImage) {
+                generateASCII();
+            }
+        });
+
+        charSetSelect.addEventListener('change', () => {
+            if (currentImage) {
+                generateASCII();
+            }
+        });
+
+        invertCheckbox.addEventListener('change', () => {
+            if (currentImage) {
+                generateASCII();
+            }
+        });
+
+        brightnessSlider.addEventListener('input', () => {
+            if (currentImage) {
+                generateASCII();
+            }
+        });
+
+        contrastSlider.addEventListener('input', () => {
+            if (currentImage) {
+                generateASCII();
+            }
+        });
+    </script>
+</body>
+</html>
+
